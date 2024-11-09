@@ -1,3 +1,4 @@
+
 const express = require('express');
 const app = express();
 const sqlite3 = require('sqlite3').verbose();
@@ -8,23 +9,23 @@ app.use(express.json());
 // Database setup
 const db = new sqlite3.Database('./mydb.sqlite', (err) => {
 if (err) {
-console.error('Error opening database:', err.message);
+    console.error('Error opening database:', err.message);
 } else {
-console.log('Connected to SQLite database');
+    console.log('Connected to SQLite database');
 }
 });
 // Example API endpoint
-app.get('/api/jobs', (req, res) => {
-db.all('SELECT * FROM jobs', [], (err, rows) => {
-if (err) {
-res.status(400).json({ error: err.message });
-return;
-}
-res.json({ data: rows });
-});
+app.get('/api/accounts', (req, res) => {
+    db.all('SELECT * FROM accounts', [], (err, rows) => {
+        if (err) {
+            res.status(400).json({ error: err.message });
+            return;
+        }
+        res.json({ data: rows });
+    });
 });
 // Start the server
 const PORT = 5000;
 app.listen(PORT, () => {
-console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });

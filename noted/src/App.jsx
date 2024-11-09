@@ -1,22 +1,14 @@
-import { useNavigate } from 'react-router-dom';
+// src/App.js
 
-const App = () => {
-  const navigate = useNavigate();
-
-  const goToLoginPage = () => {
-    navigate('/login'); // Navigate to the Login page
-  };
-
+import React from 'react';
+import AccountList from './AccountList';
+function App() {
   return (
     <div>
-      <h1>Home Page</h1>
-      <p>Welcome to the homepage!</p>
-      <button onClick={goToLoginPage}>Go to Login Page</button>
+      <h1>Hello, Vite + React!</h1>
+      <AccountList/>
     </div>
   );
-};
+}
 
 export default App;
-
-
-
