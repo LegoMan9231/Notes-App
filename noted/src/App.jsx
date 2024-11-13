@@ -4,7 +4,7 @@ import './App.css';
 function App() {
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState('');
-  const [updateItem, setUpdateItem] = useState({ id: null, username: '' });
+  const [updateItem, setUpdateItem] = useState({ id: null, username: '', password: '', project_total: null });
 
   // Fetch items from the backend
   const fetchItems = async () => {
@@ -79,6 +79,18 @@ function App() {
             type="text"
             value={updateItem.username}
             onChange={(e) => setUpdateItem({ ...updateItem, username: e.target.value })}
+            placeholder="Update item"
+          />
+          <input
+            type="text"
+            value={updateItem.password}
+            onChange={(e) => setUpdateItem({ ...updateItem, password: e.target.value })}
+            placeholder="Update item"
+          />
+          <input
+            type="text"
+            value={updateItem.project_total}
+            onChange={(e) => setUpdateItem({ ...updateItem, project_total: e.target.value })}
             placeholder="Update item"
           />
           <button onClick={updateItemHandler}>Update</button>
