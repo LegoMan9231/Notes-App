@@ -4,11 +4,11 @@ import './App.css';
 function App() {
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState('');
-  const [updateItem, setUpdateItem] = useState({ id: null, username: '', password: '', project_total: null });
+  const [updateItem, setUpdateItem] = useState({ id: null, title: ''});
 
   // Fetch items from the backend
   const fetchItems = async () => {
-    const response = await fetch('http://localhost:5000/api/accounts');
+    const response = await fetch('http://localhost:5000/api/projects');
     const data = await response.json();
     setItems(data);
   };
@@ -16,12 +16,12 @@ function App() {
   // Add a new item
   const addItem = async () => {
     if (!newItem) return;
-    const response = await fetch('http://localhost:5000/api/accounts', {
+    const response = await fetch('http://localhost:5000/api/projects', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: newItem }),
+      body: JSON.stringify({ title: newItem }),
     });
     const data = await response.json();
     setItems([...items, data]);
@@ -30,22 +30,22 @@ function App() {
 
   // Update an existing item
   const updateItemHandler = async () => {
-    if (!updateItem.username || !updateItem.id) return;
-    const response = await fetch(`http://localhost:5000/api/accounts/${updateItem.id}`, {
+    if (!updateItem.title || !updateItem.id) return;
+    const response = await fetch(`http://localhost:5000/api/projects/${updateItem.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: updateItem.username }),
+      body: JSON.stringify({ title: updateItem.title }),
     });
     const data = await response.json();
     setItems(items.map((item) => (item.id === data.id ? data : item)));
-    setUpdateItem({ id: null, username: '' });
+    setUpdateItem({ id: null, title: '' });
   };
 
   // Delete an item
   const deleteItem = async (id) => {
-    const response = await fetch(`http://localhost:5000/api/accounts/${id}`, {
+    const response = await fetch(`http://localhost:5000/api/projects/${id}`, {
       method: 'DELETE',
     });
     if (response.ok) {
@@ -77,20 +77,8 @@ function App() {
         <div>
           <input
             type="text"
-            value={updateItem.username}
-            onChange={(e) => setUpdateItem({ ...updateItem, username: e.target.value })}
-            placeholder="Update item"
-          />
-          <input
-            type="text"
-            value={updateItem.password}
-            onChange={(e) => setUpdateItem({ ...updateItem, password: e.target.value })}
-            placeholder="Update item"
-          />
-          <input
-            type="text"
-            value={updateItem.project_total}
-            onChange={(e) => setUpdateItem({ ...updateItem, project_total: e.target.value })}
+            value={updateItem.title}
+            onChange={(e) => setUpdateItem({ ...updateItem, title: e.target.value })}
             placeholder="Update item"
           />
           <button onClick={updateItemHandler}>Update</button>
@@ -101,8 +89,8 @@ function App() {
       <ul>
         {items.map((item) => (
           <li key={item.id}>
-            #{item.id} {item.username}      
-            <button onClick={() => setUpdateItem({ id: item.id, username: item.username })}>Edit</button>
+            #{item.id} {item.title}      
+            <button onClick={() => setUpdateItem({ id: item.id, title: item.title })}>Edit</button>
             <button onClick={() => deleteItem(item.id)}>Delete</button>
           </li>
         ))}
