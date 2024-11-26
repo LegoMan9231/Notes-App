@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import './css/styles.css';  // Make sure this CSS file includes the styles above
-import image from './assets/img/portfolio/thumbnails/5.jpg';
+import 'C:/Users/alexr/Downloads/CSC425WebToReactStarter-main/Notes-App/noted/src/css/styles.css';  // Make sure this CSS file includes the styles above
+import image from 'C:/Users/alexr/Downloads/CSC425WebToReactStarter-main/Notes-App/noted/src/assets/img/portfolio/thumbnails/5.jpg';
 
 const Homepage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,20 +87,6 @@ const Homepage = () => {
         <link href="./styles.css" rel="stylesheet" />
       </head> 
       <body id="page-top">
-        {/* Navbar - Transparent and Fixed */}
-        <nav className="navbar navbar-expand-lg navbar-light fixed-top py-3" id="mainNav">
-          <div className="container px-4 px-lg-5">
-            <a className="navbar-brand" href="#page-top">DoolyNoted</a>
-            <button className="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation"><span className="navbar-toggler-icon"></span></button>
-            <div className="collapse navbar-collapse" id="navbarResponsive">
-              <ul className="navbar-nav ms-auto my-2 my-lg-0">
-                <li className="nav-item"><a className="nav-link" href="#about">Profile</a></li>
-                <li className="nav-item"><a className="nav-link" href="#services">My Projects</a></li>
-              </ul>
-            </div>
-          </div>
-        </nav>
-
         <header className="masthead">
           <div className="container px-4 px-lg-5 h-100">
             <div className="row gx-4 gx-lg-5 h-100 align-items-center justify-content-center text-center">

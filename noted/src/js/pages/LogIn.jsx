@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import './css/styles.css'
+import { useNavigate } from 'react-router-dom'; // Import useNavigate hook
+import 'C:/Users/alexr/Downloads/CSC425WebToReactStarter-main/Notes-App/noted/src/css/styles.css';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ const LoginPage = () => {
   });
   const [isLogin, setIsLogin] = useState(true); // Flag to switch between login and register
   const [message, setMessage] = useState('');
+  const navigate = useNavigate(); // Initialize navigate function
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,6 +28,11 @@ const LoginPage = () => {
       const response = await axios.post(`http://localhost:3000${endpoint}`, formData);
       console.log('Response from server:', response);  // Log the response
       setMessage(response.data.message);
+
+      // If login is successful, navigate to the Home Page
+      if (isLogin && response.status === 200) {
+        navigate('/'); // Navigate to the Home Page
+      }
     } catch (error) {
       console.error('Error occurred:', error);  // Log the error
       setMessage(error.response ? error.response.data.message : 'An error occurred');
@@ -93,3 +100,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
