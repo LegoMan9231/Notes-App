@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import 'C:/Users/alexr/Downloads/CSC425WebToReactStarter-main/Notes-App/noted/src/css/styles.css';  // Make sure this CSS file includes the styles above
-import image from 'C:/Users/alexr/Downloads/CSC425WebToReactStarter-main/Notes-App/noted/src/assets/img/portfolio/thumbnails/5.jpg';
+import './css/styles.css';  // Make sure this CSS file includes the styles above
+import image from './assets/img/portfolio/thumbnails/5.jpg';
 
 const Homepage = () => {
   const [searchTerm, setSearchTerm] = useState('');

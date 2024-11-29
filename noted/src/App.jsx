@@ -4,9 +4,9 @@ import LoginPage from './LogIn.jsx';
 //import RegistrationPage from './RegistrationPage';
 import HomePage from './Home.jsx';
 //import MyProjectsPage from './MyProjectsPage';
-//import IndividualProjectPage from './IndividualProjectPage';
+import MyProject from './Project.jsx';
 import Navbar from './Navbar.jsx';
-import 'C:/Users/alexr/Downloads/CSC425WebToReactStarter-main/Notes-App/noted/src/css/styles.css'
+import './css/styles.css'
 
 const App = () => {
   return (
@@ -16,6 +16,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/project" element={<MyProject />} />
         </Routes>
       </div>
     </Router>

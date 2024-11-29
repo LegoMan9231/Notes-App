@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate hook
-import 'C:/Users/alexr/Downloads/CSC425WebToReactStarter-main/Notes-App/noted/src/css/styles.css';
+import './css/styles.css';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
