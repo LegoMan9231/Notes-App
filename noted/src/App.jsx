@@ -3,12 +3,13 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import LoginPage from './LogIn.jsx';
 //import RegistrationPage from './RegistrationPage';
 import HomePage from './Home.jsx';
-//import MyProjectsPage from './MyProjectsPage';
+import MyProjectsPage from './ProjectList.jsx';
 import MyProject from './Project.jsx';
 import Navbar from './Navbar.jsx';
 import './css/styles.css'
 
 const App = () => {
+  
   return (
     <Router>
       <Navbar/>
@@ -16,7 +17,8 @@ const App = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/project" element={<MyProject />} />
+          <Route path="/projects" element={<MyProjectsPage/>} />
+          <Route path="/projects/:projectId" element={<MyProject/>} />
         </Routes>
       </div>
     </Router>
@@ -24,10 +26,3 @@ const App = () => {
 };
 
 export default App;
-
-/** 
-<Route path="/register" element={<RegistrationPage />} />
-<Route path="/projects" element={<MyProjectsPage />} />
-<Route path="/projects/:projectId" element={<IndividualProjectPage />} />
-
-*/

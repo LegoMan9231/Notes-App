@@ -105,7 +105,11 @@ const Homepage = () => {
                 />
               </div>
             </div>
-
+          </div>
+        </header>
+      </body>
+      <body className='background'>
+        <div>
             {/* Note Templates with Pagination */}
             {filteredTemplates.length > 0 && (
               <div className="container mt-5">
@@ -157,7 +161,6 @@ const Homepage = () => {
               </div>
             )}
           </div>
-        </header>
       </body>
     </div>
   );

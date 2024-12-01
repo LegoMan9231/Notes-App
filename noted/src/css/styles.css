@@ -20,7 +20,38 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Adds shadow on hover */
 }
 
+/* Ensure the html and body take full height */
+html, body {
+  height: 100%;
+  margin: 0;
+}
 
+/* Apply flexbox to body to ensure footer stays at the bottom */
+body.background {
+  display: flex;
+  flex-direction: column;
+  padding-top: 10rem;
+  background: linear-gradient(to bottom, rgba(92, 77, 66, 0.8) 0%, rgba(92, 77, 66, 0.8) 100%), url("../assets/img/Drawn Background.webp");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+  background-size: cover;
+  height: 100%;
+}
+
+/* Main content section should take all available space */
+main {
+  flex: 1;
+}
+
+/* Adjust footer styling */
+footer {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
 
 :root {
   --bs-blue: #0d6efd;
