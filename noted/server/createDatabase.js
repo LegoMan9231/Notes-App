@@ -19,6 +19,7 @@ db.serialize(() => {
     ProjectID INTEGER PRIMARY KEY AUTOINCREMENT,
     UserID INTEGER,
     title TEXT,
+    thumbnail TEXT,
     jsonAddress TEXT,
     FOREIGN KEY(UserID) REFERENCES users(id) ON DELETE SET NULL
     )`, (err) => {

@@ -1,81 +1,106 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom'; // Import to capture the projectId from URL
 import DragAndDropTextBox from './TextBox'; // Import the child component
 
-const App = () => {
-  const [textBoxes, setTextBoxes] = useState([
-    { id: 1, text: 'Text Box 1', position: { x: 50, y: 50 }, size: { width: 150, height: 60 } },
-    { id: 2, text: 'Text Box 2', position: { x: 150, y: 150 }, size: { width: 150, height: 60 } },
-    { id: 3, text: 'Text Box 3', position: { x: 250, y: 250 }, size: { width: 150, height: 60 } },
-  ]);
+const Project = () => {
+  const { projectId } = useParams(); // Get projectId from the URL
+  const [textBoxes, setTextBoxes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Function to handle adding a new text box
+  // Fetch project data and load the JSON file when the component mounts
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      try {
+        // Fetch the project data from the backend
+        const response = await fetch(`http://localhost:5000/api/projects/${projectId}`);
+        if (!response.ok) {
+          throw new Error('Failed to load project');
+        }
+        const projectData = await response.json();
+
+        // Load the associated JSON file
+        const jsonResponse = await fetch(projectData.jsonAddress);
+        if (!jsonResponse.ok) {
+          throw new Error('Failed to load project data from JSON file');
+        }
+        const jsonData = await jsonResponse.json();
+        
+        // Set the project data to the textBoxes state
+        setTextBoxes(jsonData.textBoxes || []);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchProjectData();
+  }, [projectId]);
+
   const addTextBox = () => {
     const newTextBox = {
-      id: textBoxes.length + 1, // Assign a new unique ID
-      text: 'New Text Box', // Default text
-      position: { x: 100, y: 100 }, // Default position
-      size: { width: 150, height: 60 }, // Default size
+      id: textBoxes.length + 1,
+      text: 'New Text Box',
+      position: { x: 100, y: 100 },
+      size: { width: 150, height: 60 },
     };
     setTextBoxes([...textBoxes, newTextBox]);
   };
 
-  // Function to save text box data as a JSON file
   const saveData = () => {
-    const jsonData = JSON.stringify(textBoxes, null, 2); // Convert to JSON with indentation
-    const blob = new Blob([jsonData], { type: 'application/json' }); // Create a Blob with the JSON data
-    const url = URL.createObjectURL(blob); // Create an object URL for the Blob
-    const a = document.createElement('a'); // Create an anchor element
-    a.href = url; // Set the href to the object URL
-    a.download = 'text_boxes_data.json'; // Set the file name for download
-    a.click(); // Programmatically trigger the download
-    URL.revokeObjectURL(url); // Clean up the object URL after the download
+    const jsonData = JSON.stringify({ textBoxes }, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'text_boxes_data.json';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  // Function to handle loading data from a JSON file
-  const loadData = (event) => {
-    const file = event.target.files[0]; // Get the selected file
+  const triggerFileInput = () => {
+    document.getElementById('file-input').click();
+  };
 
+  const loadData = (event) => {
+    const file = event.target.files[0];
     if (file && file.type === 'application/json') {
       const reader = new FileReader();
-
       reader.onload = () => {
         try {
-          const loadedData = JSON.parse(reader.result); // Parse the JSON data
-
-          if (Array.isArray(loadedData)) {
-            // Ensure the data is an array of text box objects
-            setTextBoxes(loadedData);
+          const loadedData = JSON.parse(reader.result);
+          if (Array.isArray(loadedData.textBoxes)) {
+            setTextBoxes(loadedData.textBoxes);
           } else {
             alert('Invalid data format in the JSON file.');
           }
         } catch (error) {
-          alert('Failed to parse JSON file. Please ensure the file is valid.');
+          alert('Failed to parse JSON file.');
         }
       };
-
-      reader.readAsText(file); // Read the file as text
+      reader.readAsText(file);
     } else {
       alert('Please upload a valid JSON file.');
     }
   };
 
-  // Trigger file input click when Load Data button is clicked
-  const triggerFileInput = () => {
-    document.getElementById('file-input').click();
-  };
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
-      {/* Taskbar on the left side */}
       <div
         style={{
           width: '200px',
           backgroundColor: '#333',
           color: '#fff',
           padding: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-start',
           position: 'fixed',
           top: '0',
           bottom: '0',
@@ -83,54 +108,18 @@ const App = () => {
         }}
       >
         <h3>Taskbar</h3>
-        <button
-          onClick={addTextBox}
-          style={{
-            backgroundColor: '#5cb85c',
-            border: 'none',
-            color: 'white',
-            padding: '10px',
-            marginTop: '20px',
-            cursor: 'pointer',
-            fontSize: '16px',
-          }}
-        >
+        <button onClick={addTextBox} style={buttonStyles}>
           Add New Text Box
         </button>
 
-        {/* Save Button */}
-        <button
-          onClick={saveData}
-          style={{
-            backgroundColor: '#0275d8',
-            border: 'none',
-            color: 'white',
-            padding: '10px',
-            marginTop: '20px',
-            cursor: 'pointer',
-            fontSize: '16px',
-          }}
-        >
+        <button onClick={saveData} style={buttonStyles}>
           Save Data
         </button>
 
-        {/* Load Button */}
-        <button
-          onClick={triggerFileInput}
-          style={{
-            backgroundColor: '#f0ad4e',
-            border: 'none',
-            color: 'white',
-            padding: '10px',
-            marginTop: '20px',
-            cursor: 'pointer',
-            fontSize: '16px',
-          }}
-        >
+        <button onClick={triggerFileInput} style={buttonStyles}>
           Load Data
         </button>
 
-        {/* Hidden File Input for loading JSON file */}
         <input
           type="file"
           accept=".json"
@@ -140,25 +129,21 @@ const App = () => {
         />
       </div>
 
-      {/* Main Content Area */}
-      <div
-        style={{
-          marginLeft: '200px', // Offset by taskbar width
-          width: '100%',
-          height: '100%',
-          padding: '20px',
-          overflow: 'auto',
-        }}
-      >
-        <h2>Drag and Drop Text Boxes</h2>
-        {/* Render the DragAndDropTextBox component */}
-        <DragAndDropTextBox 
-          textBoxes={textBoxes} 
-          setTextBoxes={setTextBoxes} 
-        />
+      <div style={{ marginLeft: '200px', width: '100%', padding: '20px' }}>
+        <DragAndDropTextBox textBoxes={textBoxes} setTextBoxes={setTextBoxes} />
       </div>
     </div>
   );
 };
 
-export default App;
+const buttonStyles = {
+  backgroundColor: '#0275d8',
+  border: 'none',
+  color: 'white',
+  padding: '10px',
+  marginTop: '20px',
+  cursor: 'pointer',
+  fontSize: '16px',
+};
+
+export default Project;

@@ -25,7 +25,7 @@ const LoginPage = () => {
     const endpoint = isLogin ? '/login' : '/register';
   
     try {
-      const response = await axios.post(`http://localhost:3000${endpoint}`, formData);
+      const response = await axios.post(`http://localhost:5000${endpoint}`, formData);
       console.log('Response from server:', response);  // Log the response
       setMessage(response.data.message);
 
@@ -40,6 +40,7 @@ const LoginPage = () => {
   };
 
   return (
+    <body className='background'>
     <div className="container">
       <div className="row justify-content-center align-items-center" style={{ height: '100vh' }}>
         <div className="col-md-6 col-lg-4">
@@ -96,6 +97,7 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
+    </body>
   );
 };
 
