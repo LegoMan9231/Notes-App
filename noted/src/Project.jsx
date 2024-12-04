@@ -12,29 +12,29 @@ const Project = () => {
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
-        // Fetch the project data from the backend
         const response = await fetch(`http://localhost:5000/api/projects/${projectId}`);
         if (!response.ok) {
-          throw new Error('Failed to load project');
+          throw new Error(`Failed to fetch project data. Status: ${response.status}`);
         }
         const projectData = await response.json();
-
-        // Load the associated JSON file
+    
+        console.log('Project data:', projectData); // Log project data
+    
         const jsonResponse = await fetch(projectData.jsonAddress);
         if (!jsonResponse.ok) {
           throw new Error('Failed to load project data from JSON file');
         }
         const jsonData = await jsonResponse.json();
         
-        // Set the project data to the textBoxes state
         setTextBoxes(jsonData.textBoxes || []);
         setLoading(false);
       } catch (err) {
+        console.error('Error occurred:', err); // Log error for debugging
         setError(err.message);
         setLoading(false);
       }
     };
-
+    
     fetchProjectData();
   }, [projectId]);
 

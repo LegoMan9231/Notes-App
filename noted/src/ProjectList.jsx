@@ -130,7 +130,7 @@ const ProjectList = () => {
             <div className="row row-cols-1 row-cols-md-3 g-4">
               {currentProjects.map((project) => (
                 <div key={project.ProjectID} className="col">
-                  <Link to={`/projects/${project.title.toLowerCase().replace(/\s+/g, '-')}`} className="card h-100 shadow-sm border-light hover-card">
+                  <Link to={`/projects/${project.title}`} className="card h-100 shadow-sm border-light hover-card">
                     <div className="card-img-container">
                       <img
                         src={project.thumbnail}

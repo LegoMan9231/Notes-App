@@ -211,20 +211,24 @@ app.get('/api/projects', (req, res) => {
   });
 });
 
-app.get('/api/projects/:projectId', (req, res) => {
+app.get('/api/projects/${projectId}', (req, res) => {
   const { projectId } = req.params;
-  
+  console.log('Fetching project with ID:', projectId);  // Log the projectId being requested
+
   const sql = 'SELECT * FROM projects WHERE title = ?';
   db.get(sql, [projectId], (err, row) => {
     if (err) {
+      console.error('Error fetching project:', err);
       return res.status(500).json({ message: 'Error fetching project', error: err.message });
     }
     if (!row) {
+      console.log(`Project with ID ${projectId} not found.`);
       return res.status(404).json({ message: 'Project not found' });
     }
     res.json(row);
   });
 });
+
 
 // Start the server
 app.listen(port, () => {
