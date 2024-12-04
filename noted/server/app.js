@@ -211,12 +211,13 @@ app.get('/api/projects', (req, res) => {
   });
 });
 
-app.get('/api/projects/${projectId}', (req, res) => {
+app.get('/api/projects/projectId', (req, res) => {
   const { projectId } = req.params;
   console.log('Fetching project with ID:', projectId);  // Log the projectId being requested
 
-  const sql = 'SELECT * FROM projects WHERE title = ?';
+  const sql = 'SELECT jsonAddress FROM projects WHERE title = ?';
   db.get(sql, [projectId], (err, row) => {
+    console.log(row);
     if (err) {
       console.error('Error fetching project:', err);
       return res.status(500).json({ message: 'Error fetching project', error: err.message });
