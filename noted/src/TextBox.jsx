@@ -8,6 +8,7 @@ const DraggableTextBox = ({ id, text, position, size, onMove, onEditText, onResi
   const [initialPosition, setInitialPosition] = useState(position);
   const [initialSize, setInitialSize] = useState(size);
   const [isEditing, setIsEditing] = useState(false);
+  const [editableText, setEditableText] = useState(text); // controlled state for text
   const textBoxRef = useRef(null);
 
   const handleMouseDownDrag = (e) => {
@@ -58,14 +59,14 @@ const DraggableTextBox = ({ id, text, position, size, onMove, onEditText, onResi
 
   const handleBlur = () => {
     if (isEditing) {
-      onEditText(id, textBoxRef.current.innerText);
+      onEditText(id, editableText);  // update state with the new text value
       setIsEditing(false);
     }
   };
 
   const handleInput = (e) => {
-    const newText = e.target.innerText;
-    onEditText(id, newText);
+    // Update the editable text value as the user types
+    setEditableText(e.target.innerHTML); 
   };
 
   React.useEffect(() => {
@@ -128,12 +129,12 @@ const DraggableTextBox = ({ id, text, position, size, onMove, onEditText, onResi
           textAlign: 'left',
           lineHeight: '1.5',
           boxSizing: 'border-box',
+          direction: 'ltr',  // Explicitly set text direction here
         }}
         onBlur={handleBlur}
         onInput={handleInput}
-      >
-        {text}
-      </div>
+        dangerouslySetInnerHTML={{ __html: editableText }}  // Render editable text
+      />
 
       <div
         style={resizeHandleStyle}

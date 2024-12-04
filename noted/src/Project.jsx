@@ -11,30 +11,40 @@ const Project = () => {
   // Fetch project data and load the JSON file when the component mounts
   useEffect(() => {
     const fetchProjectData = async () => {
+      const token = localStorage.getItem('token'); // Get the token from localStorage
+
+      if (!token) {
+        alert('You must be logged in to view this project.');
+        return;
+      }
+
       try {
-        const response = await fetch(`http://localhost:5000/api/projects/${projectId}`);
+        const encodedTitle = encodeURIComponent(projectId); // Ensure encoding
+        console.log('Encoded Title:', encodedTitle); // Log the encoded title
+        const response = await fetch(`http://localhost:5000/api/projects/${encodedTitle}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+          },
+        });
+
         if (!response.ok) {
           throw new Error(`Failed to fetch project data. Status: ${response.status}`);
         }
+
         const projectData = await response.json();
-    
-        console.log('Project data:', projectData); // Log project data
-    
-        const jsonResponse = await fetch(projectData.jsonAddress);
-        if (!jsonResponse.ok) {
-          throw new Error('Failed to load project data from JSON file');
-        }
-        const jsonData = await jsonResponse.json();
-        
-        setTextBoxes(jsonData.textBoxes || []);
+        console.log('Project data:', projectData);
+
+        // Set the textBoxes with the data loaded from the backend
+        setTextBoxes(projectData.textBoxes || []);
         setLoading(false);
       } catch (err) {
-        console.error('Error occurred:', err); // Log error for debugging
+        console.error('Error occurred:', err);
         setError(err.message);
         setLoading(false);
       }
     };
-    
+
     fetchProjectData();
   }, [projectId]);
 
@@ -48,15 +58,36 @@ const Project = () => {
     setTextBoxes([...textBoxes, newTextBox]);
   };
 
-  const saveData = () => {
-    const jsonData = JSON.stringify({ textBoxes }, null, 2);
-    const blob = new Blob([jsonData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'text_boxes_data.json';
-    a.click();
-    URL.revokeObjectURL(url);
+  const saveData = async () => {
+    const token = localStorage.getItem('token'); // Get the token from localStorage
+
+    if (!token) {
+      alert('You must be logged in to save this project.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/projects/save/${projectId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+        },
+        body: JSON.stringify({ textBoxes }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to save project data: ${errorData.message}`);
+      }
+
+      const result = await response.json();
+      alert(result.message); // Show success message
+
+    } catch (error) {
+      console.error('Error occurred during save:', error); // Log the error in the console
+      alert('Failed to save data. Check the console for more details.');
+    }
   };
 
   const triggerFileInput = () => {

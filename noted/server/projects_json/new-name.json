@@ -1,4 +1,16 @@
 {
-  "title": "New Name",
-  "UserID": 1
+  "textBoxes": [
+    {
+      "id": 1,
+      "text": "kcidNew Text Box",
+      "position": {
+        "x": 887,
+        "y": 176
+      },
+      "size": {
+        "width": 477,
+        "height": 285
+      }
+    }
+  ]
 }

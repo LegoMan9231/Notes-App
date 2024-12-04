@@ -1,4 +1,40 @@
 {
-  "title": "E",
-  "UserID": 1
+  "textBoxes": [
+    {
+      "id": 1,
+      "text": "New Text Box",
+      "position": {
+        "x": 1042,
+        "y": 192
+      },
+      "size": {
+        "width": 150,
+        "height": 60
+      }
+    },
+    {
+      "id": 2,
+      "text": "New Text Box",
+      "position": {
+        "x": 952,
+        "y": 292
+      },
+      "size": {
+        "width": 150,
+        "height": 60
+      }
+    },
+    {
+      "id": 3,
+      "text": "New Text Box",
+      "position": {
+        "x": 1136,
+        "y": 293
+      },
+      "size": {
+        "width": 150,
+        "height": 60
+      }
+    }
+  ]
 }

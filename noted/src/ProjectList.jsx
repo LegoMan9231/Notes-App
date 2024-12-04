@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './css/styles.css';  // Make sure this CSS file includes the styles above
+import './css/styles.css';  // Ensure this CSS file includes the styles above
 import { Link } from 'react-router-dom';  // Import Link for routing
 
 const ProjectList = () => {
@@ -8,13 +8,41 @@ const ProjectList = () => {
   const [projects, setProjects] = useState([]);
   const [newProjectTitle, setNewProjectTitle] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true); // Track loading state
+  const [error, setError] = useState(null); // Error state to handle API fetch errors
   const itemsPerPage = 9;
 
-  // Fetch projects from the backend
+  // Fetch projects from the backend with authentication token
   const fetchProjects = async () => {
-    const response = await fetch('/api/projects');
-    const data = await response.json();
-    setProjects(data);
+    const token = localStorage.getItem('token'); // Get the token from localStorage
+
+    if (!token) {
+      alert("You must be logged in to view projects.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/projectList', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects.');
+      }
+
+      const data = await response.json();
+      setProjects(data);
+      setError(null); // Reset error if data is fetched successfully
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+      setError('There was an error loading the projects.');
+    } finally {
+      setLoading(false); // Set loading to false after data is fetched or failed
+    }
   };
 
   // Fetch projects on component mount
@@ -51,20 +79,32 @@ const ProjectList = () => {
   // Handle adding a new project
   const handleAddProject = async () => {
     if (newProjectTitle.trim()) {
+      // Format the project title to lowercase and replace spaces with hyphens
+      const formattedTitle = newProjectTitle.trim().toLowerCase().replace(/\s+/g, '-');
+      const token = localStorage.getItem('token'); // Get the token from localStorage
+
+      if (!token) {
+        alert("You must be logged in to add a project.");
+        return;
+      }
+
       const response = await fetch('/api/projects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+        },
         body: JSON.stringify({
-          UserID: 1,  // Example UserID, you can replace it with actual user data
-          title: newProjectTitle,
-          thumbnail: '/path/to/thumbnail.jpg'  // Example thumbnail
+          UserID: 1,  // Example UserID, replace it with actual user data (from the token)
+          title: formattedTitle,
+          thumbnail: '/path/to/thumbnail.jpg',  // Example thumbnail
         }),
       });
 
       if (response.ok) {
         fetchProjects(); // Refresh project list
-        setNewProjectTitle('');
-        setShowModal(false);
+        setNewProjectTitle('');  // Clear input
+        setShowModal(false);  // Close modal
       } else {
         alert('Error creating project');
       }
@@ -72,6 +112,15 @@ const ProjectList = () => {
       alert('Please enter a valid project title');
     }
   };
+
+  // Rendering loading spinner or error message
+  if (loading) {
+    return <div className="text-center mt-5">Loading projects...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center mt-5 text-danger">{error}</div>;
+  }
 
   return (
     <body className='background'>
@@ -124,13 +173,20 @@ const ProjectList = () => {
           </div>
         )}
 
+        {/* Empty State for Projects */}
+        {filteredProjects.length === 0 && (
+          <div className="text-center mt-5">
+            <h4>No projects found. Create a new one!</h4>
+          </div>
+        )}
+
         {/* Projects List with Pagination */}
         {filteredProjects.length > 0 && (
           <div className="container mt-5">
             <div className="row row-cols-1 row-cols-md-3 g-4">
               {currentProjects.map((project) => (
                 <div key={project.ProjectID} className="col">
-                  <Link to={`/projects/${project.title}`} className="card h-100 shadow-sm border-light hover-card">
+                  <Link to={`/projects/${project.title.toLowerCase().replace(/\s+/g, '-')}`} className="card h-100 shadow-sm border-light hover-card">
                     <div className="card-img-container">
                       <img
                         src={project.thumbnail}
@@ -150,7 +206,7 @@ const ProjectList = () => {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {totalPages > 1 && filteredProjects.length > 0 && (
           <div className="pagination-container text-center mt-4">
             <ul className="pagination justify-content-center">
               <li className="page-item">
@@ -181,4 +237,3 @@ const ProjectList = () => {
 };
 
 export default ProjectList;
-

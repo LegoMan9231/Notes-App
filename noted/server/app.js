@@ -6,7 +6,8 @@ const db = new sqlite3.Database('./mydb.sqlite');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-
+const jwt = require('jsonwebtoken');
+require('dotenv').config();  // This will load variables from .env into process.env
 
 const app = express();
 const port = 5000;
@@ -15,7 +16,30 @@ const port = 5000;
 app.use(bodyParser.json());
 app.use(cors());
 
-//Creates the tables
+
+const authenticateToken = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1]; // Extract token from the Authorization header
+
+  if (!token) {
+    return res.status(403).json({ message: 'Access denied, no token provided' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+
+    // Attach user info to the request object
+    req.user = decoded;
+    next(); // Proceed to the next middleware or route handler
+  });
+};
+
+
+// Serve static files from the 'projects_json' directory
+app.use('/projects_json', express.static(path.join(__dirname, 'projects_json')));
+
+// Creates the tables
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -39,12 +63,11 @@ db.serialize(() => {
         } else {
             console.log('Projects table created successfully');
         }
-});
+  });
 });
 
 // Function to delete duplicate entries
 const deleteDuplicates = () => {
-  // Step 1: Find duplicate usernames
   const findDuplicatesSQL = `
     SELECT username, COUNT(*) as count
     FROM users
@@ -63,11 +86,9 @@ const deleteDuplicates = () => {
       return;
     }
 
-    // Step 2: For each duplicate, delete the extra entries
     rows.forEach(row => {
       const username = row.username;
 
-      // Deleting duplicates but keeping the first one (based on the rowid)
       const deleteDuplicatesSQL = `
         DELETE FROM users
         WHERE username = ? AND rowid NOT IN (
@@ -88,66 +109,70 @@ const deleteDuplicates = () => {
   });
 };
 
-// Call the function to delete duplicates
 deleteDuplicates();
 
 // Function to register a new user with a hashed password
 app.post('/register', (req, res) => {
-    const { username, password } = req.body;
-  
-    if (!username || !password) {
-      console.log("Username or password not provided");
-      return res.status(400).json({ message: 'Username and password are required' });
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required' });
+  }
+
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error hashing password' });
     }
-  
-    bcrypt.hash(password, 10, (err, hashedPassword) => {
+
+    const sql = 'INSERT INTO users (username, password_hash) VALUES (?, ?)';
+    db.run(sql, [username, hashedPassword], function (err) {
       if (err) {
-        console.error('Error hashing password:', err);
-        return res.status(500).json({ message: 'Error hashing password' });
+        return res.status(500).json({ message: 'Error saving user to database' });
       }
-  
-      const sql = 'INSERT INTO users (username, password_hash) VALUES (?, ?)';
-      db.run(sql, [username, hashedPassword], function (err) {
-        if (err) {
-          console.error('Error saving user to database:', err);
-          return res.status(500).json({ message: 'Error saving user to database' });
-        }
-        console.log('User registered:', this.lastID);
-        res.status(201).json({ message: 'User registered successfully', userId: this.lastID });
-      });
+      res.status(201).json({ message: 'User registered successfully', userId: this.lastID });
     });
   });
-  
-  // Function to login a user by verifying their password
-  app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-  
-    if (!username || !password) {
-      return res.status(400).json({ message: 'Username and password are required' });
+});
+
+// Function to login a user by verifying their password
+// Function to login a user by verifying their password
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required' });
+  }
+
+  const sql = 'SELECT * FROM users WHERE username = ?';
+  db.get(sql, [username], (err, row) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error retrieving user' });
     }
-  
-    const sql = 'SELECT * FROM users WHERE username = ?';
-    db.get(sql, [username], (err, row) => {
+    if (!row) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    bcrypt.compare(password, row.password_hash, (err, isMatch) => {
       if (err) {
-        return res.status(500).json({ message: 'Error retrieving user' });
+        return res.status(500).json({ message: 'Error comparing passwords' });
       }
-      if (!row) {
-        return res.status(404).json({ message: 'User not found' });
+      if (isMatch) {
+        // Generate JWT token
+        const token = jwt.sign(
+          { userId: row.id, username: row.username },
+          process.env.JWT_SECRET, // This pulls the JWT_SECRET from your .env file
+          { expiresIn: '1h' } // Optional: Set an expiration time for the token
+        );
+
+        return res.status(200).json({ message: 'Login successful', token });
+      } else {
+        return res.status(401).json({ message: 'Invalid password' });
       }
-  
-      bcrypt.compare(password, row.password_hash, (err, isMatch) => {
-        if (err) {
-          return res.status(500).json({ message: 'Error comparing passwords' });
-        }
-        if (isMatch) {
-          return res.status(200).json({ message: 'Login successful' });
-        } else {
-          return res.status(401).json({ message: 'Invalid password' });
-        }
-      });
     });
   });
-  // Route to create a new project
+});
+
+// Route to create a new project
 app.post('/api/projects', (req, res) => {
   const { UserID, title, thumbnail } = req.body;
 
@@ -190,49 +215,97 @@ app.post('/api/projects', (req, res) => {
       // Write the JSON data to the file
       fs.writeFile(newProject.jsonAddress, JSON.stringify(projectData, null, 2), (err) => {
         if (err) {
-          console.error('Error writing JSON file:', err);
           return res.status(500).json({ message: 'Error creating JSON file', error: err.message });
         }
 
-        // Respond with success
         res.status(201).json({ message: 'Project created successfully', projectID: this.lastID });
       });
     }
   );
 });
 
-// Route to get all projects (for the frontend)
-app.get('/api/projects', (req, res) => {
-  db.all('SELECT * FROM projects', (err, rows) => {
+
+// Route to get project data based on the title
+app.get('/api/projects/:title', authenticateToken, (req, res) => {
+  const { title } = req.params;
+
+  const formattedTitle = title.toLowerCase().replace(/\s+/g, '-');
+  const jsonFilePath = path.join(__dirname, 'projects_json', `${formattedTitle}.json`);
+
+  fs.readFile(jsonFilePath, 'utf8', (err, data) => {
     if (err) {
+      console.error('Error reading project file:', err);
+      return res.status(500).json({
+        message: 'Error reading project data',
+        error: err.message,
+      });
+    }
+
+    try {
+      const projectData = JSON.parse(data);
+      res.json(projectData);
+    } catch (parseErr) {
+      console.error('Error parsing project data:', parseErr);
+      return res.status(500).json({
+        message: 'Error parsing project data',
+        error: parseErr.message,
+      });
+    }
+  });
+});
+
+
+// Save project data
+app.post('/api/projects/save/:title', (req, res) => {
+  const { title } = req.params;
+  const { textBoxes } = req.body;
+
+  if (!Array.isArray(textBoxes)) {
+    return res.status(400).json({ message: 'Invalid textBoxes data format' });
+  }
+
+  // Ensure the title is formatted correctly (lowercase and hyphens instead of spaces)
+  const formattedTitle = title.toLowerCase().replace(/\s+/g, '-');
+  const jsonFilePath = path.join(__dirname, 'projects_json', `${formattedTitle}.json`);
+
+  // Data to save
+  const dataToSave = { textBoxes };
+
+  fs.writeFile(jsonFilePath, JSON.stringify(dataToSave, null, 2), (err) => {
+    if (err) {
+      console.error('Error saving project file:', err);
+      return res.status(500).json({ message: 'Error saving project data', error: err.message });
+    }
+    res.json({ message: 'Project data saved successfully' });
+  });
+});
+
+// Lists all projects owned by userID
+app.get('/api/projectList', authenticateToken, (req, res) => {
+  // Extract the userId from the JWT token (stored in req.user)
+  const userID = req.user.userId;
+
+  // SQL query to fetch all projects for the authenticated user
+  const sql = `SELECT * FROM projects WHERE UserID = ?`;
+
+  db.all(sql, [userID], (err, rows) => {
+    if (err) {
+      console.error('Error fetching projects:', err);
       return res.status(500).json({ message: 'Error fetching projects', error: err.message });
     }
-    res.json(rows);
+
+    if (rows.length > 0) {
+      res.status(200).json(rows);
+    } else {
+      res.status(404).json({ message: 'No projects found for this user.' });
+    }
   });
 });
 
-app.get('/api/projects/projectId', (req, res) => {
-  const { projectId } = req.params;
-  console.log('Fetching project with ID:', projectId);  // Log the projectId being requested
 
-  const sql = 'SELECT jsonAddress FROM projects WHERE title = ?';
-  db.get(sql, [projectId], (err, row) => {
-    console.log(row);
-    if (err) {
-      console.error('Error fetching project:', err);
-      return res.status(500).json({ message: 'Error fetching project', error: err.message });
-    }
-    if (!row) {
-      console.log(`Project with ID ${projectId} not found.`);
-      return res.status(404).json({ message: 'Project not found' });
-    }
-    res.json(row);
-  });
-});
 
 
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
-
