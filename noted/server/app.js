@@ -135,7 +135,6 @@ app.post('/register', (req, res) => {
 });
 
 // Function to login a user by verifying their password
-// Function to login a user by verifying their password
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
 
@@ -256,29 +255,65 @@ app.get('/api/projects/:title', authenticateToken, (req, res) => {
 
 
 // Save project data
-app.post('/api/projects/save/:title', (req, res) => {
-  const { title } = req.params;
+app.post('/api/projects/save/:projectId', authenticateToken, (req, res) => {
+  const { projectId } = req.params;
   const { textBoxes } = req.body;
 
-  if (!Array.isArray(textBoxes)) {
-    return res.status(400).json({ message: 'Invalid textBoxes data format' });
+  try {
+    // Fetch the project from the database
+    db.get('SELECT * FROM projects WHERE title = ?', [decodeURIComponent(projectId)], (err, project) => {
+      if (err) {
+        console.error('Error fetching project:', err);
+        return res.status(500).json({ message: 'Failed to fetch project data', error: err.message });
+      }
+
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found ' + decodeURIComponent(projectId)});
+      }
+
+      // Check if the logged-in user matches the project owner (UserID)
+      if (project.UserID !== req.user.userId) {
+        return res.status(403).json({ message: 'Unauthorized access' });
+      }
+
+      // Read the existing JSON file for the project
+      fs.readFile(project.jsonAddress, 'utf8', (err, data) => {
+        if (err) {
+          console.error('Error reading project JSON file:', err);
+          return res.status(500).json({ message: 'Error reading project JSON file', error: err.message });
+        }
+
+        try {
+          // Parse the existing project data
+          const projectData = JSON.parse(data);
+
+          // Update the project data with the new textBoxes data
+          projectData.textBoxes = textBoxes; // Update with the valid textboxes
+
+          // Write the updated data back to the JSON file
+          fs.writeFile(project.jsonAddress, JSON.stringify(projectData, null, 2), (err) => {
+            if (err) {
+              console.error('Error saving project data to JSON file:', err);
+              return res.status(500).json({ message: 'Error saving project data to JSON file', error: err.message });
+            }
+
+            // Return success message
+            res.json({ message: 'Project saved successfully' });
+          });
+        } catch (parseErr) {
+          console.error('Error parsing project JSON file:', parseErr);
+          return res.status(500).json({ message: 'Error parsing project data', error: parseErr.message });
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    res.status(500).json({ message: 'Unexpected server error', error: err.message });
   }
-
-  // Ensure the title is formatted correctly (lowercase and hyphens instead of spaces)
-  const formattedTitle = title.toLowerCase().replace(/\s+/g, '-');
-  const jsonFilePath = path.join(__dirname, 'projects_json', `${formattedTitle}.json`);
-
-  // Data to save
-  const dataToSave = { textBoxes };
-
-  fs.writeFile(jsonFilePath, JSON.stringify(dataToSave, null, 2), (err) => {
-    if (err) {
-      console.error('Error saving project file:', err);
-      return res.status(500).json({ message: 'Error saving project data', error: err.message });
-    }
-    res.json({ message: 'Project data saved successfully' });
-  });
 });
+
+
+
 
 // Lists all projects owned by userID
 app.get('/api/projectList', authenticateToken, (req, res) => {

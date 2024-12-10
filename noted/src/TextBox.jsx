@@ -1,16 +1,24 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-// Draggable TextBox Component
-const DraggableTextBox = ({ id, text, position, size, onMove, onEditText, onResize }) => {
+const DraggableTextBox = ({
+  id,
+  text,
+  position = { x: 100, y: 100 }, // Default position
+  size = { width: 150, height: 60 }, // Default size
+  onMove,
+  onEditText,
+  onResize,
+}) => {
   const [dragging, setDragging] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [initialMouse, setInitialMouse] = useState({ x: 0, y: 0 });
   const [initialPosition, setInitialPosition] = useState(position);
   const [initialSize, setInitialSize] = useState(size);
   const [isEditing, setIsEditing] = useState(false);
-  const [editableText, setEditableText] = useState(text); // controlled state for text
+  const [editableText, setEditableText] = useState(text);
   const textBoxRef = useRef(null);
 
+  // Handle mouse events for dragging and resizing
   const handleMouseDownDrag = (e) => {
     if (resizing) return;
     setDragging(true);
@@ -59,17 +67,17 @@ const DraggableTextBox = ({ id, text, position, size, onMove, onEditText, onResi
 
   const handleBlur = () => {
     if (isEditing) {
-      onEditText(id, editableText);  // update state with the new text value
+      onEditText(id, editableText);  // Update state with the new text value
       setIsEditing(false);
     }
   };
 
   const handleInput = (e) => {
     // Update the editable text value as the user types
-    setEditableText(e.target.innerHTML); 
+    setEditableText(e.target.innerText); // Use innerText instead of innerHTML
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (dragging || resizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -116,7 +124,6 @@ const DraggableTextBox = ({ id, text, position, size, onMove, onEditText, onResi
       <div
         ref={textBoxRef}
         contentEditable={isEditing}
-        dir="ltr"
         style={{
           border: isEditing ? '1px solid blue' : 'none',
           outline: 'none',
@@ -129,12 +136,13 @@ const DraggableTextBox = ({ id, text, position, size, onMove, onEditText, onResi
           textAlign: 'left',
           lineHeight: '1.5',
           boxSizing: 'border-box',
-          direction: 'ltr',  // Explicitly set text direction here
+          direction: 'ltr',
         }}
         onBlur={handleBlur}
         onInput={handleInput}
-        dangerouslySetInnerHTML={{ __html: editableText }}  // Render editable text
-      />
+      >
+        {editableText} {/* This is where the text is displayed */}
+      </div>
 
       <div
         style={resizeHandleStyle}
@@ -144,7 +152,6 @@ const DraggableTextBox = ({ id, text, position, size, onMove, onEditText, onResi
   );
 };
 
-// Main Component to manage draggable text boxes
 const DragAndDropTextBox = ({ textBoxes, setTextBoxes }) => {
   const moveTextBox = (id, newPosition) => {
     setTextBoxes((prevTextBoxes) =>

@@ -8,24 +8,47 @@ const Project = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch project data and load the JSON file when the component mounts
+  // Function to decode JWT manually
+  const decodeJwt = (token) => {
+    try {
+      const parts = token.split('.');
+
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format');
+      }
+
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const decodedPayload = atob(base64);
+      return JSON.parse(decodedPayload);
+    } catch (error) {
+      console.error('Failed to decode token:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const fetchProjectData = async () => {
-      const token = localStorage.getItem('token'); // Get the token from localStorage
+      const token = localStorage.getItem('token');
 
       if (!token) {
         alert('You must be logged in to view this project.');
         return;
       }
 
+      const decodedToken = decodeJwt(token);
+      if (!decodedToken || !decodedToken.userId) {
+        alert('Invalid token or unauthorized access.');
+        return;
+      }
+
+      const currentUserId = decodedToken.userId;
+
       try {
-        const encodedTitle = encodeURIComponent(projectId); // Ensure encoding
-        console.log('Encoded Title:', encodedTitle); // Log the encoded title
+        const encodedTitle = encodeURIComponent(projectId);
         const response = await fetch(`http://localhost:5000/api/projects/${encodedTitle}`, {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
-          },
+          headers: { 'Authorization': `Bearer ${token}` },
         });
 
         if (!response.ok) {
@@ -33,9 +56,17 @@ const Project = () => {
         }
 
         const projectData = await response.json();
-        console.log('Project data:', projectData);
+        if (!projectData.UserID) {
+          alert('Project data is missing UserID. Cannot verify ownership.');
+          return;
+        }
 
-        // Set the textBoxes with the data loaded from the backend
+        if (projectData.UserID !== currentUserId) {
+          alert('You are not authorized to view this project.');
+          return;
+        }
+
+        // Set textboxes if available
         setTextBoxes(projectData.textBoxes || []);
         setLoading(false);
       } catch (err) {
@@ -51,44 +82,84 @@ const Project = () => {
   const addTextBox = () => {
     const newTextBox = {
       id: textBoxes.length + 1,
-      text: 'New Text Box',
-      position: { x: 100, y: 100 },
-      size: { width: 150, height: 60 },
+      text: '', // Default text
+      position: { x: 100, y: 100 }, // Default position
+      size: { width: 150, height: 60 }, // Default size
     };
-    setTextBoxes([...textBoxes, newTextBox]);
+    setTextBoxes((prevTextBoxes) => [...prevTextBoxes, newTextBox]);
   };
 
   const saveData = async () => {
-    const token = localStorage.getItem('token'); // Get the token from localStorage
-
+    const token = localStorage.getItem('token');
+  
     if (!token) {
       alert('You must be logged in to save this project.');
       return;
     }
-
+  
+    const decodedToken = decodeJwt(token);
+    if (!decodedToken || !decodedToken.userId) {
+      alert('Invalid token or unauthorized access.');
+      return;
+    }
+  
+    const currentUserId = decodedToken.userId;
+  
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/save/${projectId}`, {
+      const fetchResponse = await fetch(`http://localhost:5000/api/projects/${encodeURIComponent(projectId)}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+  
+      if (!fetchResponse.ok) {
+        const errorData = await fetchResponse.json();
+        throw new Error(`Failed to fetch project data: ${errorData.message}`);
+      }
+  
+      const projectData = await fetchResponse.json();
+      if (!projectData.UserID) {
+        alert('Project data is missing UserID. Cannot verify ownership.');
+        return;
+      }
+  
+      if (projectData.UserID !== currentUserId) {
+        alert('You are not authorized to save this project.');
+        return;
+      }
+  
+      // Filter out blank textboxes
+      const validTextBoxes = textBoxes.filter((box) => box.text && typeof box.text === 'string' && box.text.trim() !== '');
+  
+      const updatedProjectData = {
+        title: projectData.title,
+        UserID: projectData.UserID,
+        textBoxes: validTextBoxes,
+      };
+  
+      const saveResponse = await fetch(`http://localhost:5000/api/projects/save/${encodeURIComponent(projectId)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ textBoxes }),
+        body: JSON.stringify(updatedProjectData),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to save project data: ${errorData.message}`);
+  
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json().catch(() => null);
+        console.error('Save failed:', errorData);
+        const errorMessage = errorData?.message || 'Failed to save project data. Please try again.';
+        throw new Error(errorMessage);
       }
-
-      const result = await response.json();
-      alert(result.message); // Show success message
-
+  
+      const result = await saveResponse.json();
+      alert(result.message);
     } catch (error) {
-      console.error('Error occurred during save:', error); // Log the error in the console
-      alert('Failed to save data. Check the console for more details.');
+      console.error('Error occurred during save:', error);
+      alert(`Failed to save data: ${error.message}. Check the console for more details.`);
     }
   };
+  
 
   const triggerFileInput = () => {
     document.getElementById('file-input').click();
@@ -102,7 +173,13 @@ const Project = () => {
         try {
           const loadedData = JSON.parse(reader.result);
           if (Array.isArray(loadedData.textBoxes)) {
-            setTextBoxes(loadedData.textBoxes);
+            // Ensure each box has the necessary properties
+            const updatedTextBoxes = loadedData.textBoxes.map((box) => ({
+              ...box,
+              position: box.position || { x: 100, y: 100 }, // Default position
+              size: box.size || { width: 150, height: 60 }, // Default size
+            }));
+            setTextBoxes(updatedTextBoxes);
           } else {
             alert('Invalid data format in the JSON file.');
           }
@@ -115,6 +192,7 @@ const Project = () => {
       alert('Please upload a valid JSON file.');
     }
   };
+  
 
   if (loading) {
     return <div>Loading...</div>;
@@ -139,11 +217,11 @@ const Project = () => {
         }}
       >
         <h3>Taskbar</h3>
-        <button onClick={addTextBox} style={buttonStyles}>
+        <button onClick={() => addTextBox()} style={buttonStyles}>
           Add New Text Box
         </button>
 
-        <button onClick={saveData} style={buttonStyles}>
+        <button onClick={() => saveData()} style={buttonStyles}>
           Save Data
         </button>
 

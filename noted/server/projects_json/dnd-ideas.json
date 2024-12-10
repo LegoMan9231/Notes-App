@@ -1,16 +1,4 @@
 {
-  "textBoxes": [
-    {
-      "id": 1,
-      "text": " ",
-      "position": {
-        "x": 226,
-        "y": 452
-      },
-      "size": {
-        "width": 379,
-        "height": 219
-      }
-    }
-  ]
+  "title": "Dnd Ideas",
+  "UserID": 1
 }

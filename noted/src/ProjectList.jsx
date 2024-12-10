@@ -12,17 +12,18 @@ const ProjectList = () => {
   const [error, setError] = useState(null); // Error state to handle API fetch errors
   const itemsPerPage = 9;
 
-  // Fetch projects from the backend with authentication token
   const fetchProjects = async () => {
     const token = localStorage.getItem('token'); // Get the token from localStorage
 
+    // Step 1: Check if token is missing
     if (!token) {
       alert("You must be logged in to view projects.");
-      setLoading(false);
+      setLoading(false);  // Stop loading if no token
       return;
     }
 
     try {
+      // Step 2: Fetch projects from the API
       const response = await fetch('/api/projectList', {
         method: 'GET',
         headers: {
@@ -30,18 +31,29 @@ const ProjectList = () => {
         },
       });
 
-      if (!response.ok) {
+      // Step 3: Parse the response body, regardless of the status code
+      const data = await response.json();
+
+      // Step 4: Check if the response is successful or contains the "No projects found" message
+      if (response.ok) {
+        // Projects found
+        setProjects(data);  // Set the projects list
+        setError(null);  // Reset error
+      } else if (response.status === 404 && data.message === "No projects found for this user.") {
+        // No projects found
+        setProjects([]);  // Set empty projects array
+        setError(null);  // Reset error (no projects, not an error)
+      } else {
+        // Handle any other errors (invalid token, server issues, etc.)
         throw new Error('Failed to fetch projects.');
       }
-
-      const data = await response.json();
-      setProjects(data);
-      setError(null); // Reset error if data is fetched successfully
     } catch (err) {
+      // Step 5: Handle errors if any (network issues, invalid token, etc.)
       console.error('Error fetching projects:', err);
       setError('There was an error loading the projects.');
     } finally {
-      setLoading(false); // Set loading to false after data is fetched or failed
+      // Step 6: Stop loading (whether success or error)
+      setLoading(false);
     }
   };
 
@@ -76,42 +88,82 @@ const ProjectList = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
-  // Handle adding a new project
+  const decodeJwt = (token) => {
+    try {
+      // Step 1: Split the token into parts
+      const parts = token.split('.');
+  
+      // Ensure the token is correctly formatted (should have 3 parts)
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format');
+      }
+  
+      // Step 2: Decode the payload (second part)
+      const base64Url = parts[1];  // The payload is the second part of the token
+  
+      // Step 3: Convert Base64Url to Base64
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  
+      // Step 4: Decode Base64 string to a UTF-8 string
+      const decodedPayload = atob(base64);
+  
+      // Step 5: Parse the decoded string into a JSON object
+      const decodedToken = JSON.parse(decodedPayload);
+  
+      return decodedToken;
+    } catch (error) {
+      console.error('Failed to decode token:', error);
+      return null;
+    }
+  };
+  
+
   const handleAddProject = async () => {
     if (newProjectTitle.trim()) {
       // Format the project title to lowercase and replace spaces with hyphens
-      const formattedTitle = newProjectTitle.trim().toLowerCase().replace(/\s+/g, '-');
+      const formattedTitle = newProjectTitle
       const token = localStorage.getItem('token'); // Get the token from localStorage
-
+  
       if (!token) {
         alert("You must be logged in to add a project.");
         return;
       }
-
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
-        },
-        body: JSON.stringify({
-          UserID: 1,  // Example UserID, replace it with actual user data (from the token)
-          title: formattedTitle,
-          thumbnail: '/path/to/thumbnail.jpg',  // Example thumbnail
-        }),
-      });
-
-      if (response.ok) {
-        fetchProjects(); // Refresh project list
-        setNewProjectTitle('');  // Clear input
-        setShowModal(false);  // Close modal
-      } else {
-        alert('Error creating project');
+  
+      try {
+        // Decode the token to extract the userId
+        const decodedToken = decodeJwt(token);
+        const userId = decodedToken.userId; // Extract userId from the decoded token
+  
+        // Make the API call with the userId from the token
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+          },
+          body: JSON.stringify({
+            UserID: userId,  // Use the userId from the decoded token
+            title: formattedTitle,
+            thumbnail: '/path/to/thumbnail.jpg',  // Example thumbnail
+          }),
+        });
+  
+        if (response.ok) {
+          // Refresh project list
+          setNewProjectTitle('');  // Clear input
+          setShowModal(false);  // Close modal
+        } else {
+          alert('Error creating project');
+        }
+      } catch (error) {
+        console.error('Failed to decode token:', error);
+        alert('Invalid token. Please log in again.');
       }
     } else {
       alert('Please enter a valid project title');
     }
   };
+  
 
   // Rendering loading spinner or error message
   if (loading) {
