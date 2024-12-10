@@ -1,27 +1,28 @@
-// src/App.js
-
 import React from 'react';
-import AccountList from './AccountList';
-import CRUD from 'noted/server/CRUD';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import LoginPage from './LogIn.jsx';
+//import RegistrationPage from './RegistrationPage';
+import HomePage from './Home.jsx';
+import ProjectsPage from './ProjectList.jsx';
+import Project from './Project.jsx';
+import Navbar from './Navbar.jsx';
+import './css/styles.css'
 
-function App() {
-  CRUD.add()
-  const addItem = () => {
-
-  }
+const App = () => {
+  
   return (
-    <div>
-      <h1>Hello, Vite + React!</h1>
-      <AccountList/>
-      <body>
-      <input type="text" id="NU" placeholder="New Username"></input>
-      <input type="text" id="NP" placeholder="New Password"></input>
-      <input type="text" id="NPT" placeholder="New Project Total"></input>
-      <button onclick={addItem}></button>
-      </body>
-    </div>
+    <Router>
+      <Navbar/>
+      <div>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/projects" element={<ProjectsPage/>} />
+          <Route path="/projects/:projectId" element={<Project/>} />
+        </Routes>
+      </div>
+    </Router>
   );
-}
-
+};
 
 export default App;
